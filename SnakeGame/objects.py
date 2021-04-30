@@ -20,6 +20,74 @@ class Direction(Enum):
 
 Point = namedtuple('Point', 'x, y')
 
+class Block:
+	
+	GREEN = (0,128,0)
+	LIGHT_GREEN = (0, 255, 0)
+
+	def __init__(self, point: Point, size: int):
+		self._point = point
+		self._size = size
+
+	def draw(self, innerColor, outerColor, screen):
+		pygame.draw.rect(screen, innerColor, pygame.Rect(self._point.x, self._point.y, self._size, self._size))
+		pygame.draw.rect(screen, outerColor, pygame.Rect(self._point.x+4, self._point.y+4, 12, 12))
+
+	def getPoint(self):
+		return self._point
+	
+	def setPoint(self, point: Point):
+		self._point = point
+
+class Snake:
+	def __init__(self, xPos, yPos, blockSize):
+		
+		self.direction = Direction.RIGHT
+		self.block_size = blockSize
+
+		self.head = Block(Point(xPos, yPos), self.block_size)
+		
+		self.body = [self.head,
+					 Block(Point(xPos - self.block_size, yPos), self.block_size),
+					 Block(Point(xPos - (2*self.block_size), yPos), self.block_size)]
+	
+	def move(self, action):
+		# [straight, right, left]
+
+		clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
+		index = clock_wise.index(self.direction)
+
+		if np.array_equal(action, [1,0,0]):
+			new_direction = clock_wise[index] # no change
+		elif np.array_equal(action, [0,1,0]):
+			next_index = (index + 1) % 4
+			new_direction = clock_wise[next_index] # right turn
+		else: # [0,0,1]
+			next_index = (index - 1) % 4
+			new_direction = clock_wise[next_index]
+		
+		self.direction = new_direction
+
+		head = self.head.getPoint()
+		x = head.x
+		y = head.y
+
+		if self.direction == Direction.RIGHT:
+			x += self.block_size
+		elif self.direction == Direction.LEFT:
+			x -= self.block_size
+		elif self.direction == Direction.UP:
+			y -= self.block_size
+		elif self.direction == Direction.DOWN:
+			y += self.block_size
+		
+		self.head = Block(Point(x, y), self.block_size)
+		self.body.insert(0, self.head)
+
+	def draw(self, innerColor, outerColor, screen):
+		for block in self.body:
+			block.draw(innerColor, outerColor, screen)
+
 class SnakeGameAI:
 
 	SCREEN_WIDTH = 640
@@ -27,7 +95,8 @@ class SnakeGameAI:
 
 	BLACK = (0,0,0)
 	WHITE = (255,255,255)
-	RED = (255, 0, 0)
+	LIGHT_RED = (255, 0, 0)
+	RED = (128, 0, 0)
 	BLUE = (0, 0, 255)
 	GREEN = (0,128,0)
 	LIGHT_GREEN = (0, 255, 0)
@@ -53,11 +122,7 @@ class SnakeGameAI:
 	
 	def reset(self):
 		# Initialise game state
-		self.direction = Direction.RIGHT
-		self.head = Point(self.SCREEN_WIDTH/2, self.SCREEN_HEIGHT/2)
-		self.snake = [self.head,
-					  Point(self.head.x-self.BLOCK_SIZE, self.head.y),
-					  Point(self.head.x-(2*self.BLOCK_SIZE), self.head.y)]
+		self.snake = Snake(self.SCREEN_WIDTH/2, self.SCREEN_HEIGHT/2, self.BLOCK_SIZE)
 		self.score = 0
 		self.food = None
 		self._place_food()
@@ -66,63 +131,33 @@ class SnakeGameAI:
 	def _place_food(self):
 		x = random.randint(0, (self.SCREEN_WIDTH-self.BLOCK_SIZE)//self.BLOCK_SIZE) * self.BLOCK_SIZE
 		y = random.randint(0, (self.SCREEN_HEIGHT-self.BLOCK_SIZE)//self.BLOCK_SIZE) * self.BLOCK_SIZE
-		self.food = Point(x, y)
-		if self.food in self.snake:
-			self._place_food()
+		self.food = Block(Point(x, y), self.BLOCK_SIZE)
+
+		for block in self.snake.body:
+			if self.food.getPoint() in block.getPoint():
+				self._place_food()
 	
 	def _update_ui(self):
 		self.screen.fill(self.BLACK)
 
-		for pt in self.snake:
-			pygame.draw.rect(self.screen, self.GREEN, pygame.Rect(pt.x, pt.y, self.BLOCK_SIZE, self.BLOCK_SIZE))
-			pygame.draw.rect(self.screen, self.LIGHT_GREEN, pygame.Rect(pt.x+4, pt.y+4, 12, 12))
+		self.snake.draw(self.GREEN, self.LIGHT_GREEN, self.screen)
 		
-		pygame.draw.rect(self.screen, self.RED, pygame.Rect(self.food.x, self.food.y, self.BLOCK_SIZE, self.BLOCK_SIZE))
+		self.food.draw(self.RED, self.LIGHT_RED, self.screen)
 
 		text = self.font.render("Score: " + str(self.score), True, self.WHITE)
 		self.screen.blit(text, [0, 0])
 		pygame.display.flip()
 	
-	def _move(self, action):
-		# [straight, right, left]
+	def is_collision(self, point=None):
+		if point is None:
+			point = self.snake.head.getPoint()
 
-		clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
-		index = clock_wise.index(self.direction)
-
-		if np.array_equal(action, [1,0,0]):
-			new_direction = clock_wise[index] # no change
-		elif np.array_equal(action, [0,1,0]):
-			next_index = (index + 1) % 4
-			new_direction = clock_wise[next_index] # right turn
-		else: # [0,0,1]
-			next_index = (index - 1) % 4
-			new_direction = clock_wise[next_index]
-		
-		self.direction = new_direction
-
-		x = self.head.x
-		y = self.head.y
-
-		if self.direction == Direction.RIGHT:
-			x += self.BLOCK_SIZE
-		elif self.direction == Direction.LEFT:
-			x -= self.BLOCK_SIZE
-		elif self.direction == Direction.UP:
-			y -= self.BLOCK_SIZE
-		elif self.direction == Direction.DOWN:
-			y += self.BLOCK_SIZE
-		
-		self.head = Point(x, y)
-	
-	def is_collision(self, pt=None):
-		if pt is None:
-			pt = self.head
-
-		if pt.x > self.SCREEN_WIDTH - self.BLOCK_SIZE or pt.x < 0 or pt.y > self.SCREEN_HEIGHT - self.BLOCK_SIZE or pt.y < 0:
+		if point.x > self.SCREEN_WIDTH - self.BLOCK_SIZE or point.x < 0 or point.y > self.SCREEN_HEIGHT - self.BLOCK_SIZE or point.y < 0:
 			return True
 		
-		if pt in self.snake[1:]:
-			return True
+		for block in self.snake.body[1:]:	
+			if point in block.getPoint():
+				return True
 		
 		return False
 	
@@ -134,22 +169,21 @@ class SnakeGameAI:
 				pygame.quit()
 				quit()
 		# 2. Move
-		self._move(action)
-		self.snake.insert(0, self.head)
+		self.snake.move(action)
 		# 3. Check if game over
 		reward = 0
 		game_over = False
-		if self.is_collision() or self.frame_iteration > 100*len(self.snake):
+		if self.is_collision() or self.frame_iteration > 100*len(self.snake.body):
 			game_over = True
 			reward = -10
 			return reward, game_over, self.score
 		# 4. Place new food or just move
-		if self.head == self.food:
+		if self.snake.head.getPoint() == self.food.getPoint():
 			self.score += 1
 			reward = 10
 			self._place_food()
 		else:
-			self.snake.pop()
+			self.snake.body.pop()
 		# 5. Update ui and clock
 		self._update_ui()
 		self.clock.tick(self.SPEED)

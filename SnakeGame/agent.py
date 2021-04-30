@@ -29,16 +29,20 @@ class Agent:
 
 	def get_state(self, game):
 		
-		head = game.snake[0]
+		head = game.snake.head.getPoint()
+		food = game.food.getPoint()
+
+		direction = game.snake.direction
+
 		point_l = Point(head.x - self.BLOCK_SIZE, head.y)
 		point_r = Point(head.x + self.BLOCK_SIZE, head.y)
 		point_u = Point(head.x, head.y - self.BLOCK_SIZE)
 		point_d = Point(head.x, head.y + self.BLOCK_SIZE)
 
-		dir_l = game.direction == Direction.LEFT
-		dir_r = game.direction == Direction.RIGHT
-		dir_u = game.direction == Direction.UP
-		dir_d = game.direction == Direction.DOWN
+		dir_l = direction == Direction.LEFT
+		dir_r = direction == Direction.RIGHT
+		dir_u = direction == Direction.UP
+		dir_d = direction == Direction.DOWN
 
 		state = [
 			# Danger straight
@@ -66,10 +70,11 @@ class Agent:
 			dir_d,
 
 			# Food location
-			game.food.x < game.head.x, # food left
-			game.food.x > game.head.x, # food right
-			game.food.y < game.head.y, # food up
-			game.food.y > game.head.y  # food down
+			
+			food.x < head.x, # food left
+			food.x > head.x, # food right
+			food.y < head.y, # food up
+			food.y > head.y  # food down
 		]
 		return np.array(state, dtype=int)
 
