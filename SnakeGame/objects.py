@@ -88,7 +88,8 @@ class Snake:
 		for block in self.body:
 			block.draw(innerColor, outerColor, screen)
 
-class SnakeGameAI:
+
+class SnakeGame:
 
 	SCREEN_WIDTH = 640
 	SCREEN_HEIGHT = 480
@@ -104,7 +105,7 @@ class SnakeGameAI:
 	FONT_COLOR = WHITE
 	
 	BLOCK_SIZE = 20
-	SPEED = 40
+	SPEED = 20
 	
 	font = pygame.font.SysFont('arial', 25)
 
@@ -148,6 +149,19 @@ class SnakeGameAI:
 		self.screen.blit(text, [0, 0])
 		pygame.display.flip()
 	
+	def _convert_userinput(self, direction):
+		clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
+		index = clock_wise.index(self.snake.direction)
+		if direction == clock_wise[index]:
+			return [1,0,0] # No change, move straight
+		elif direction == clock_wise[(index - 2) % 4]:
+			return [1,0,0] # No change, Attempted reverse illegal move
+		elif direction == clock_wise[(index - 1) % 4]:
+			return [0,0,1] # Right turn
+		elif direction == clock_wise[(index + 1) % 4]:
+			return [0,1,0] # Left turn
+		
+	
 	def is_collision(self, point=None):
 		if point is None:
 			point = self.snake.head.getPoint()
@@ -156,11 +170,54 @@ class SnakeGameAI:
 			return True
 		
 		for block in self.snake.body[1:]:	
-			if point in block.getPoint():
+			if point == block.getPoint():
 				return True
 		
 		return False
-	
+
+	def play_step(self):
+		# 1. Collect user input
+		action = [1, 0, 0] # No change in direction
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				quit()
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_LEFT:
+					action = self._convert_userinput(Direction.LEFT)
+				elif event.key == pygame.K_RIGHT:
+					action = self._convert_userinput(Direction.RIGHT)
+				elif event.key == pygame.K_UP:
+					action = self._convert_userinput(Direction.UP)
+				elif event.key == pygame.K_DOWN:
+					action = self._convert_userinput(Direction.DOWN)
+		# 2. Move
+		self.snake.move(action)
+		# 3. Check if game over
+		game_over = False
+		if self.is_collision():
+			game_over = True
+			return game_over, self.score
+		# 4. Place new food or just move
+		if self.snake.head.getPoint() == self.food.getPoint():
+			self.score += 1
+			self._place_food()
+		else:
+			self.snake.body.pop()
+		# 5. Update ui and clock
+		self._update_ui()
+		self.clock.tick(self.SPEED)
+		# 6 Return game over and score
+		
+		return game_over, self.score
+
+class SnakeGameAI(SnakeGame):
+
+	SPEED = 40
+
+	def __init__(self):
+		super().__init__()
+		
 	def play_step(self, action):
 		self.frame_iteration += 1
 		# 1. Collect user input
