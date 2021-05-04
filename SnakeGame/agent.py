@@ -31,11 +31,11 @@ class Agent:
 		self.trainer = QTrainer(self.model, lr=self.LR, gamma=self.gamma)
 		
 		
-	def get_state(self, game):
+	def get_state(self):
 		# current_frame = Image.open("./GameStates/game_frame.jpg")
 		# current_frame = ImageOps.grayscale(current_frame)
 
-		pixel_array = game.get_game_frame() 
+		pixel_array = self.game.get_game_frame() 
 		pixel_array = cv2.resize(pixel_array, (40,30), interpolation=cv2.INTER_CUBIC) # resizes the pixel array
 		pixel_array = np.mean(pixel_array, axis=2) # converts the image to grayscale
 		# cv2.imshow("grayscale pixel array", pixel_array)
@@ -44,37 +44,37 @@ class Agent:
 		pixel_array = pixel_array/255.0 # Normalizes the values in the pixel array
 		pixel_array = pixel_array.flatten() # Flattens the pixel array to a single axis
 
-		head = game.snake.body[0].getPoint()
-		food = game.food.getPoint()
+		head = self.game.snake.body[0].getPoint()
+		food = self.game.food.getPoint()
 
 		point_l = Point(head.x - self.BLOCK_SIZE, head.y)
 		point_r = Point(head.x + self.BLOCK_SIZE, head.y)
 		point_u = Point(head.x, head.y - self.BLOCK_SIZE)
 		point_d = Point(head.x, head.y + self.BLOCK_SIZE)
 
-		dir_l = game.snake.direction == Direction.LEFT
-		dir_r = game.snake.direction == Direction.RIGHT
-		dir_u = game.snake.direction == Direction.UP
-		dir_d = game.snake.direction == Direction.DOWN
+		dir_l = self.game.snake.direction == Direction.LEFT
+		dir_r = self.game.snake.direction == Direction.RIGHT
+		dir_u = self.game.snake.direction == Direction.UP
+		dir_d = self.game.snake.direction == Direction.DOWN
 
 		game_info = [
 			# Danger straight
-			(dir_r and game.is_collision(point_r)) or
-			(dir_l and game.is_collision(point_l)) or
-			(dir_u and game.is_collision(point_u)) or
-			(dir_d and game.is_collision(point_d)),
+			(dir_r and self.game.is_collision(point_r)) or
+			(dir_l and self.game.is_collision(point_l)) or
+			(dir_u and self.game.is_collision(point_u)) or
+			(dir_d and self.game.is_collision(point_d)),
 			
 			# Danger right
-			(dir_r and game.is_collision(point_d)) or
-			(dir_l and game.is_collision(point_u)) or
-			(dir_u and game.is_collision(point_r)) or
-			(dir_d and game.is_collision(point_l)),
+			(dir_r and self.game.is_collision(point_d)) or
+			(dir_l and self.game.is_collision(point_u)) or
+			(dir_u and self.game.is_collision(point_r)) or
+			(dir_d and self.game.is_collision(point_l)),
 
 			# Danger left
-			(dir_r and game.is_collision(point_u)) or
-			(dir_l and game.is_collision(point_d)) or
-			(dir_u and game.is_collision(point_l)) or
-			(dir_d and game.is_collision(point_r)),
+			(dir_r and self.game.is_collision(point_u)) or
+			(dir_l and self.game.is_collision(point_d)) or
+			(dir_u and self.game.is_collision(point_l)) or
+			(dir_d and self.game.is_collision(point_r)),
 
 			# Move Direction
 			dir_l,
@@ -122,50 +122,87 @@ class Agent:
 		
 		return final_move
 
-def train():
-	trained_model_path = "./model/model-V004.pth"
-	plot_scores = []
-	plot_mean_scores = []
-	total_score = 0
-	record = 0
-	agent = Agent(trained_model_path)
-	game = SnakeGameAI()
-	# game.save_game_frame()
-	# Training loop
-	while True:
-		# get old state
-		state_old = agent.get_state(game)
+	def train(self):
+		plot_scores = []
+		plot_mean_scores = []
+		total_score = 0
+		record = 0
+		# Training loop
+		while True:
+			# get old state
+			state_old = self.get_state()
 
-		# get move
-		final_move = agent.get_action(state_old)
+			# get move
+			final_move = self.select_action(state_old)
 
-		# perform move and get new state
-		reward, game_over, score = game.play_step(final_move)
-		# game.save_game_frame()
-		state_new = agent.get_state(game)
+			# perform move and get new state
+			reward, game_over, score = self.game.play_step(final_move)
+			# game.save_game_frame()
+			state_new = self.get_state()
+			
+			# Train short memory
+			self.train_short_memory(state_old, final_move, reward, state_new, game_over)
+
+			# remember
+			self.remember(state_old, final_move, reward, state_new, game_over)
+
+			if game_over:
+				# train long memory
+				self.game.reset()
+				self.episodes += 1
+				self.train_long_memory()
+
+				if score > record:
+					record = score
+					self.model.save()
+				print(f"Game: {self.episodes}, Score: {score}, Record: {record}")
+
+				plot_scores.append(score)
+				total_score += score
+				mean_score = total_score / self.episodes
+				plot_mean_scores.append(mean_score)
+				plot(plot_scores, plot_mean_scores)
+# def train():
+# 	trained_model_path = "./model/model-V004.pth"
+# 	plot_scores = []
+# 	plot_mean_scores = []
+# 	total_score = 0
+# 	record = 0
+# 	agent = Agent(trained_model_path)
+# 	game = SnakeGameAI()
+# 	# game.save_game_frame()
+# 	# Training loop
+# 	while True:
+# 		# get old state
+# 		state_old = agent.get_state(game)
+
+# 		# get move
+# 		final_move = agent.get_action(state_old)
+
+# 		# perform move and get new state
+# 		reward, game_over, score = game.play_step(final_move)
+# 		# game.save_game_frame()
+# 		state_new = agent.get_state(game)
 		
-		# Train short memory
-		agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
+# 		# Train short memory
+# 		agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
 
-		# remember
-		agent.remember(state_old, final_move, reward, state_new, game_over)
+# 		# remember
+# 		agent.remember(state_old, final_move, reward, state_new, game_over)
 
-		if game_over:
-			# train long memory
-			game.reset()
-			agent.number_of_games += 1
-			agent.train_long_memory()
+# 		if game_over:
+# 			# train long memory
+# 			game.reset()
+# 			agent.number_of_games += 1
+# 			agent.train_long_memory()
 
-			if score > record:
-				record = score
-				agent.model.save()
-			print(f"Game: {agent.number_of_games}, Score: {score}, Record: {record}")
+# 			if score > record:
+# 				record = score
+# 				agent.model.save()
+# 			print(f"Game: {agent.number_of_games}, Score: {score}, Record: {record}")
 
-			plot_scores.append(score)
-			total_score += score
-			mean_score = total_score / agent.number_of_games
-			plot_mean_scores.append(mean_score)
-			plot(plot_scores, plot_mean_scores)
-
-if __name__ == '__main__':
-	train()
+# 			plot_scores.append(score)
+# 			total_score += score
+# 			mean_score = total_score / agent.number_of_games
+# 			plot_mean_scores.append(mean_score)
+# 			plot(plot_scores, plot_mean_scores)
