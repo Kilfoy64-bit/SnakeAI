@@ -1,15 +1,17 @@
 try:
 	import sys
+	import os
+
 	import torch
 	import torch.nn as nn
 	import torch.optim as optim
 	import torch.nn.functional as F
-	import os
+	
 except ImportError as err:
     print (f"couldn't load module. {err}")
     sys.exit(2)
 
-class Linear_QNet(nn.Module):
+class DQN(nn.Module):
 
 	def __init__(self, input_size, hidden_size, output_size):
 		super().__init__()
@@ -29,7 +31,7 @@ class Linear_QNet(nn.Module):
 		file_name = os.path.join(model_folder_path, file_name)
 		torch.save(self.state_dict(), file_name)
 
-class QTrainer:
+class Trainer:
 	def __init__(self, model, lr, gamma):
 		self.lr = lr
 		self.gamma = gamma
@@ -44,14 +46,12 @@ class QTrainer:
 		reward = torch.tensor(reward, dtype=torch.float)
 
 		if len(state.shape) == 1:
-			# (1, x)
 			state = torch.unsqueeze(state, 0)
 			next_state = torch.unsqueeze(next_state, 0)
 			action = torch.unsqueeze(action, 0)
 			reward = torch.unsqueeze(reward, 0)
 			game_over = (game_over, )
 		
-		# 1: preditcted Q values with current state
 		prediction = self.model(state)
 		target = prediction.clone()
 
@@ -68,4 +68,3 @@ class QTrainer:
 		loss.backward()
 
 		self.optimizer.step()
-

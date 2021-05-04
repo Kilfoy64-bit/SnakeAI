@@ -1,5 +1,12 @@
-import matplotlib.pyplot as plt
-from IPython import display
+try:
+	import sys
+
+	import matplotlib.pyplot as plt
+	from IPython import display
+	
+except ImportError as err:
+    print (f"couldn't load module. {err}")
+    sys.exit(2)
 
 plt.ion()
 

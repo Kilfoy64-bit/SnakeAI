@@ -1,11 +1,13 @@
 try:
 	import sys
-	import pygame
-	from pygame.locals import *	
 	import random
 	from enum import Enum
 	from collections import namedtuple
+
 	import numpy as np
+	import pygame
+	from pygame.locals import *	
+	
 except ImportError as err:
     print (f"couldn't load module. {err}")
     sys.exit(2)
@@ -178,8 +180,9 @@ class SnakeGame:
 		return False
 
 	def play_step(self):
-		# 1. Collect user input
 		action = [1, 0, 0] # No change in direction
+
+		# User input
 		for event in pygame.event.get():
 			if event.type == QUIT:
 				pygame.quit()
@@ -193,66 +196,61 @@ class SnakeGame:
 					action = self._convert_userinput(Direction.UP)
 				elif event.key == pygame.K_DOWN:
 					action = self._convert_userinput(Direction.DOWN)
-		# 2. Move
+
 		self.snake.move(action)
-		# 3. Check if game over
+
 		game_over = False
 		if self.is_collision():
 			game_over = True
 			return game_over, self.score
-		# 4. Place new food or just move
+
 		if self.snake.head.getPoint() == self.food.getPoint():
 			self.score += 1
 			self._place_food()
 		else:
 			self.snake.body.pop()
-		# 5. Update ui and clock
+
 		self._update_ui()
 		self.clock.tick(self.SPEED)
-		# 6 Return game over and score
-		
+
 		return game_over, self.score
 
 class SnakeGameAI(SnakeGame):
 
-	SPEED = 80
+	SPEED = 40
 
 	def __init__(self):
 		super().__init__()
 	
 	def get_game_frame(self):
-		# pygame.image.save(self.surface, "game_frame.jpg")
-		surface_array = pygame.surfarray.array3d(self.surface)
-		# print(surface_array.shape)
-		# print(surface_array[self.SURFACE_WIDTH//22][self.SURFACE_HEIGHT//2])
-		return surface_array
+		return pygame.surfarray.array3d(self.surface)
 		
 	def play_step(self, action):
 		self.frame_iteration += 1
-		# 1. Collect user input
+
+		# User input
 		for event in pygame.event.get():
 			if event.type == QUIT:
 				pygame.quit()
 				quit()
-		# 2. Move
+
 		self.snake.move(action)
-		# 3. Check if game over
+
 		reward = 0
 		game_over = False
 		if self.is_collision() or self.frame_iteration > 100*len(self.snake.body):
 			game_over = True
 			reward = -10
 			return reward, game_over, self.score
-		# 4. Place new food or just move
+
 		if self.snake.head.getPoint() == self.food.getPoint():
 			self.score += 1
 			reward = 10
 			self._place_food()
 		else:
 			self.snake.body.pop()
-		# 5. Update ui and clock
+
 		self._update_ui()
 		self.clock.tick(self.SPEED)
-		# 6 Return game over and score
 		
 		return reward, game_over, self.score
