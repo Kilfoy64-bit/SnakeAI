@@ -1,0 +1,4 @@
+model-V001.pth.old - model built using original 11 inputs; 400 games played
+model-v002.pth - first model with 1211 inputs (1200 from 40x30 image and 11 original inputs)
+model-v003.pth - continuation of model-v002.pth; around 4 hours additional training
+model-v004.pth - continuation of model-v003.pth; around 2 hours additional training

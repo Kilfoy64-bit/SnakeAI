@@ -21,17 +21,13 @@ class Direction(Enum):
 Point = namedtuple('Point', 'x, y')
 
 class Block:
-	
-	GREEN = (0,128,0)
-	LIGHT_GREEN = (0, 255, 0)
-
 	def __init__(self, point: Point, size: int):
 		self._point = point
 		self._size = size
 
-	def draw(self, innerColor, outerColor, screen):
-		pygame.draw.rect(screen, innerColor, pygame.Rect(self._point.x, self._point.y, self._size, self._size))
-		pygame.draw.rect(screen, outerColor, pygame.Rect(self._point.x+4, self._point.y+4, 12, 12))
+	def draw(self, innerColor, outerColor, surface):
+		pygame.draw.rect(surface, innerColor, pygame.Rect(self._point.x, self._point.y, self._size, self._size))
+		pygame.draw.rect(surface, outerColor, pygame.Rect(self._point.x+4, self._point.y+4, 12, 12))
 
 	def getPoint(self):
 		return self._point
@@ -40,6 +36,13 @@ class Block:
 		self._point = point
 
 class Snake:
+	# HEAD COLORS
+	LIGHT_PINK = (255, 0, 255)
+	PINK = (128, 0, 128)
+	# BODY COLORS
+	GREEN = (0,128,0)
+	LIGHT_GREEN = (0, 255, 0)
+
 	def __init__(self, xPos, yPos, blockSize):
 		
 		self.direction = Direction.RIGHT
@@ -84,23 +87,22 @@ class Snake:
 		self.head = Block(Point(x, y), self.block_size)
 		self.body.insert(0, self.head)
 
-	def draw(self, innerColor, outerColor, screen):
-		for block in self.body:
-			block.draw(innerColor, outerColor, screen)
+	def draw(self, surface):
+		self.body[0].draw(self.PINK, self.LIGHT_PINK, surface)
+		for block in self.body[1:]:
+			block.draw(self.GREEN, self.LIGHT_GREEN, surface)
 
 
 class SnakeGame:
 
-	SCREEN_WIDTH = 640
-	SCREEN_HEIGHT = 480
+	SURFACE_WIDTH = 640
+	SURFACE_HEIGHT = 480
 
 	BLACK = (0,0,0)
 	WHITE = (255,255,255)
 	LIGHT_RED = (255, 0, 0)
 	RED = (128, 0, 0)
-	BLUE = (0, 0, 255)
-	GREEN = (0,128,0)
-	LIGHT_GREEN = (0, 255, 0)
+
 	BACKGROUND_COLOR = BLACK
 	FONT_COLOR = WHITE
 	
@@ -110,12 +112,12 @@ class SnakeGame:
 	font = pygame.font.SysFont('arial', 25)
 
 	def __init__(self):
-		# Initialise screen
-		self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+		# Initialise surface
+		self.surface = pygame.display.set_mode((self.SURFACE_WIDTH, self.SURFACE_HEIGHT))
 		pygame.display.set_caption('Snake Game')
 		self.clock = pygame.time.Clock()
 		# Fill background
-		background = pygame.Surface(self.screen.get_size())
+		background = pygame.Surface(self.surface.get_size())
 		background = background.convert()
 		background.fill(self.BACKGROUND_COLOR)
 		# Initialise game state
@@ -123,30 +125,30 @@ class SnakeGame:
 	
 	def reset(self):
 		# Initialise game state
-		self.snake = Snake(self.SCREEN_WIDTH/2, self.SCREEN_HEIGHT/2, self.BLOCK_SIZE)
+		self.snake = Snake(self.SURFACE_WIDTH/2, self.SURFACE_HEIGHT/2, self.BLOCK_SIZE)
 		self.score = 0
 		self.food = None
 		self._place_food()
 		self.frame_iteration = 0
 
 	def _place_food(self):
-		x = random.randint(0, (self.SCREEN_WIDTH-self.BLOCK_SIZE)//self.BLOCK_SIZE) * self.BLOCK_SIZE
-		y = random.randint(0, (self.SCREEN_HEIGHT-self.BLOCK_SIZE)//self.BLOCK_SIZE) * self.BLOCK_SIZE
+		x = random.randint(0, (self.SURFACE_WIDTH-self.BLOCK_SIZE)//self.BLOCK_SIZE) * self.BLOCK_SIZE
+		y = random.randint(0, (self.SURFACE_HEIGHT-self.BLOCK_SIZE)//self.BLOCK_SIZE) * self.BLOCK_SIZE
 		self.food = Block(Point(x, y), self.BLOCK_SIZE)
 
 		for block in self.snake.body:
-			if self.food.getPoint() in block.getPoint():
+			if self.food.getPoint() == block.getPoint():
 				self._place_food()
 	
 	def _update_ui(self):
-		self.screen.fill(self.BLACK)
+		self.surface.fill(self.BACKGROUND_COLOR)
 
-		self.snake.draw(self.GREEN, self.LIGHT_GREEN, self.screen)
+		self.snake.draw(self.surface)
 		
-		self.food.draw(self.RED, self.LIGHT_RED, self.screen)
+		self.food.draw(self.RED, self.LIGHT_RED, self.surface)
 
 		text = self.font.render("Score: " + str(self.score), True, self.WHITE)
-		self.screen.blit(text, [0, 0])
+		self.surface.blit(text, [0, 0])
 		pygame.display.flip()
 	
 	def _convert_userinput(self, direction):
@@ -166,7 +168,7 @@ class SnakeGame:
 		if point is None:
 			point = self.snake.head.getPoint()
 
-		if point.x > self.SCREEN_WIDTH - self.BLOCK_SIZE or point.x < 0 or point.y > self.SCREEN_HEIGHT - self.BLOCK_SIZE or point.y < 0:
+		if point.x > self.SURFACE_WIDTH - self.BLOCK_SIZE or point.x < 0 or point.y > self.SURFACE_HEIGHT - self.BLOCK_SIZE or point.y < 0:
 			return True
 		
 		for block in self.snake.body[1:]:	
@@ -213,10 +215,17 @@ class SnakeGame:
 
 class SnakeGameAI(SnakeGame):
 
-	SPEED = 40
+	SPEED = 80
 
 	def __init__(self):
 		super().__init__()
+	
+	def get_game_frame(self):
+		# pygame.image.save(self.surface, "game_frame.jpg")
+		surface_array = pygame.surfarray.array3d(self.surface)
+		# print(surface_array.shape)
+		# print(surface_array[self.SURFACE_WIDTH//22][self.SURFACE_HEIGHT//2])
+		return surface_array
 		
 	def play_step(self, action):
 		self.frame_iteration += 1
