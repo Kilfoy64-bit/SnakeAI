@@ -2,7 +2,7 @@ try:
 	import sys
 
 	from objects import SnakeGame
-	from agent import Agent
+	from agent import Agent, Trainer
 
 except ImportError as err:
     print (f"couldn't load module. {err}")
@@ -16,17 +16,19 @@ def playSnakeGame(): # Human input to play Snake
 			print(f"Final Score: {score}")
 			break
 
-def trainSnakeGame(): # Train agent from scratch
-	agent = Agent()
-	agent.optimize()
+def trainSnakeGameAI(filepath=None): # Train agent from scratch
+	trainer = Trainer(filepath)
+	trainer.play()
 
-def playSnakeGameAI(filepath): # Train agent from previously trained model
+def playSnakeGameAI(filepath=None): # Train agent from previously trained model
 	agent = Agent(filepath)
-	agent.optimize()
+	agent.play()
 
 def main():
-	# playSnakeGame()
-	# trainSnakeGame()
-	playSnakeGameAI("./model/model-v1/model-005.pth")
+	playSnakeGame()
+	# playSnakeGameAI()
+	# trainSnakeGameAI()
+	# trainSnakeGameAI("./model/model-v1/model-005.pth")
+	# playSnakeGameAI("./model/model-v1/model-005.pth")
 
 if __name__ == "__main__": main()
