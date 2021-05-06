@@ -20,7 +20,7 @@ class Agent:
 	MAX_MEMORY = 100_100
 	BATCH_SIZE = 128
 	GAMMA = 0.9
-	EPSILON = 0
+	EPSILON = 80 # Decay rate is 1:1 with number of episodes (games played)
 	LR = 0.001
 
 	BLOCK_SIZE = 20
@@ -108,9 +108,9 @@ class Agent:
 
 	def select_action(self, state):
 		# random moves: tradeoff exploration/ exploitation
-		self.EPSILON = 80 - self.episodes
+		random_move_opportunity = self.EPSILON - self.episodes
 		final_move = [0,0,0]
-		if random.randint(0,200) < self.EPSILON:
+		if random.randint(0,200) < random_move_opportunity:
 			move = random.randint(0, 2)
 			final_move[move] = 1
 		else:
