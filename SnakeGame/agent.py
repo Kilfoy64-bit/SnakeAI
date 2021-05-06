@@ -53,22 +53,22 @@ class Agent:
 
 		game_info = [
 			# Danger straight
-			(right_direction and self.game.is_collision(right_point)) or
-			(left_direction and self.game.is_collision(left_point)) or
-			(upwards_direction and self.game.is_collision(upwards_point)) or
-			(downwards_direction and self.game.is_collision(downwards_point)),
+			(right_direction and self.game.check_collision(right_point)) or
+			(left_direction and self.game.check_collision(left_point)) or
+			(upwards_direction and self.game.check_collision(upwards_point)) or
+			(downwards_direction and self.game.check_collision(downwards_point)),
 			
 			# Danger right
-			(right_direction and self.game.is_collision(downwards_point)) or
-			(left_direction and self.game.is_collision(upwards_point)) or
-			(upwards_direction and self.game.is_collision(right_point)) or
-			(downwards_direction and self.game.is_collision(left_point)),
+			(right_direction and self.game.check_collision(downwards_point)) or
+			(left_direction and self.game.check_collision(upwards_point)) or
+			(upwards_direction and self.game.check_collision(right_point)) or
+			(downwards_direction and self.game.check_collision(left_point)),
 
 			# Danger left
-			(right_direction and self.game.is_collision(upwards_point)) or
-			(left_direction and self.game.is_collision(downwards_point)) or
-			(upwards_direction and self.game.is_collision(left_point)) or
-			(downwards_direction and self.game.is_collision(right_point)),
+			(right_direction and self.game.check_collision(upwards_point)) or
+			(left_direction and self.game.check_collision(downwards_point)) or
+			(upwards_direction and self.game.check_collision(left_point)) or
+			(downwards_direction and self.game.check_collision(right_point)),
 
 			# Move Direction
 			left_direction,
@@ -124,7 +124,7 @@ class Trainer(Agent):
 	MAX_MEMORY = 100_100
 	BATCH_SIZE = 128
 	GAMMA = 0.9
-	EPSILON = 80 # Decay rate is 1:1 with number of episodes (games played)
+	EPSILON = 75 # Decay rate is 1:1 with number of episodes (games played)
 	LR = 0.001
 
 	BLOCK_SIZE = 20
@@ -183,10 +183,10 @@ class Trainer(Agent):
 		self.optimizer.step()
 
 	def select_action(self, state):
-		# random moves: tradeoff exploration/ exploitation
+		# exploration/ exploitation
 		random_move_opportunity = self.EPSILON - self.episodes
 		final_move = [0,0,0]
-		if random.randint(0,200) < random_move_opportunity:
+		if random.randint(0,100) < random_move_opportunity:
 			move = random.randint(0, 2)
 			final_move[move] = 1
 		else:
@@ -204,7 +204,6 @@ class Trainer(Agent):
 		record = 0
 		# Training loop
 		while True:
-			# get old state
 			state_old = self.get_state()
 
 			final_move = self.select_action(state_old)

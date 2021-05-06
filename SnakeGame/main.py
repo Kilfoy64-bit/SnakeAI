@@ -25,10 +25,10 @@ def playSnakeGameAI(filepath=None): # Train agent from previously trained model
 	agent.play()
 
 def main():
-	playSnakeGame()
+	# playSnakeGame()
 	# playSnakeGameAI()
 	# trainSnakeGameAI()
 	# trainSnakeGameAI("./model/model-v1/model-005.pth")
-	# playSnakeGameAI("./model/model-v1/model-005.pth")
+	playSnakeGameAI("./model/model-v1/model-005.pth")
 
 if __name__ == "__main__": main()

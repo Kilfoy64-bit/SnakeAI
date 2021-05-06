@@ -69,7 +69,7 @@ class Snake:
 			new_direction = clock_wise[next_index] # right turn
 		else: # [0,0,1]
 			next_index = (index - 1) % 4
-			new_direction = clock_wise[next_index]
+			new_direction = clock_wise[next_index] # left turn
 		
 		self.direction = new_direction
 
@@ -142,7 +142,7 @@ class SnakeGame:
 			if self.food.getPoint() == block.getPoint():
 				self._place_food()
 	
-	def _update_ui(self):
+	def _update_surface(self):
 		self.surface.fill(self.BACKGROUND_COLOR)
 
 		self.snake.draw(self.surface)
@@ -166,7 +166,7 @@ class SnakeGame:
 			return [0,1,0] # Left turn
 		
 	
-	def is_collision(self, point=None):
+	def check_collision(self, point=None):
 		if point is None:
 			point = self.snake.head.getPoint()
 
@@ -200,7 +200,7 @@ class SnakeGame:
 		self.snake.move(action)
 
 		game_over = False
-		if self.is_collision():
+		if self.check_collision():
 			game_over = True
 			return game_over, self.score
 
@@ -210,7 +210,7 @@ class SnakeGame:
 		else:
 			self.snake.body.pop()
 
-		self._update_ui()
+		self._update_surface()
 		self.clock.tick(self.SPEED)
 
 		return game_over, self.score
@@ -238,7 +238,7 @@ class SnakeGameAI(SnakeGame):
 
 		reward = 0
 		game_over = False
-		if self.is_collision() or self.frame_iteration > 100*len(self.snake.body):
+		if self.check_collision() or self.frame_iteration > 100*len(self.snake.body):
 			game_over = True
 			reward = -10
 			return reward, game_over, self.score
@@ -250,7 +250,7 @@ class SnakeGameAI(SnakeGame):
 		else:
 			self.snake.body.pop()
 
-		self._update_ui()
+		self._update_surface()
 		self.clock.tick(self.SPEED)
 		
 		return reward, game_over, self.score
